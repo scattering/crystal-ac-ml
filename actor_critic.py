@@ -1,9 +1,5 @@
 """
-Program name: actor_critic.py
-Author: Ryan Cho
-Implementation of Actor-Critic Reinforcement Learning to use with pycrysfml
-"""
-"""
+https://towardsdatascience.com/reinforcement-learning-w-keras-openai-actor-critic-models-f084612cfd69
 solving pendulum using actor-critic model
 """
 
