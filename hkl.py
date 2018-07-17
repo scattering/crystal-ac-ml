@@ -51,6 +51,14 @@ class HklEnv(gym.Env):
         self.backg = None
         self.exclusions = []
 
+        self.observation_space = spaces.MultiBinary(len(self.refList))
+        self.action_space = spaces.Discrete(len(self.refList))
+        print(self.observation_space.shape)
+        print(self.observation_space.sample())
+
+        print(self.action_space.shape)
+        print(self.action_space.sample())
+
         self.reset()
 
 ##    def seed(self, seed=None):

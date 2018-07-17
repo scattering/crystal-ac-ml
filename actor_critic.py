@@ -41,7 +41,7 @@ class ActorCritic:
 		_, self.target_actor_model = self.create_actor_model()
 
 		self.actor_critic_grad = tf.placeholder(tf.float32, 
-			[None, self.env.action_space.shape[0]]) # where we will feed de/dC (from critic)
+			[None, self.env.action_space.n]) # where we will feed de/dC (from critic)
 		
 		actor_model_weights = self.actor_model.trainable_weights
 		self.actor_grads = tf.gradients(self.actor_model.output, 
@@ -72,7 +72,7 @@ class ActorCritic:
 		h1 = Dense(24, activation='relu')(state_input)
 		h2 = Dense(48, activation='relu')(h1)
 		h3 = Dense(24, activation='relu')(h2)
-		output = Dense(self.env.action_space.shape[0], activation='relu')(h3)
+		output = Dense(self.env.action_space.n, activation='relu')(h3)  #edited shape
 		
 		model = Model(input=state_input, output=output)
 		adam  = Adam(lr=0.001)
