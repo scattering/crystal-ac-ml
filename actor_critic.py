@@ -174,7 +174,7 @@ class ActorCritic:
 def main():
 	sess = tf.Session()
 	K.set_session(sess)
-	env = gym.make("Pendulum-v0")
+	env = gym.make("hkl-v0")
 	actor_critic = ActorCritic(env, sess)
 
 	num_trials = 10000
