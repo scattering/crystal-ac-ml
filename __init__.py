@@ -1,8 +1,9 @@
 from gym.envs.registration import registry, register, make, spec
+from gym.envs.hkl import HklEnv
 
 register(
     id='hkl-v0',
-    entry_point='gym.envs:CopyEnv',
+    entry_point='gym.envs:HklEnv',
     max_episode_steps=200,
 )
 
