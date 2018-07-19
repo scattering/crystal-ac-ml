@@ -125,7 +125,8 @@ class ActorCritic:
 				future_reward = self.target_critic_model.predict(
 					[new_state, target_action])[0][0]
 				reward += self.gamma * future_reward
-			self.critic_model.fit([cur_state, action], reward, verbose=0)
+                        print(cur_state, action)
+			self.critic_model.fit([cur_state, action], reward, verbose=1)
 		
 	def train(self):
 		batch_size = 32
@@ -169,7 +170,8 @@ class ActorCritic:
 		self.epsilon *= self.epsilon_decay
 		if np.random.random() < self.epsilon:
 			return self.env.action_space.sample()
-		return self.actor_model.predict(cur_state)
+		prediction = self.actor_model.predict(cur_state)
+                return np.argmax(prediction)
 
 def main():
 	sess = tf.Session()
@@ -187,6 +189,9 @@ def main():
 		cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
 		action = actor_critic.act(cur_state)
 #		action = action.reshape((1, env.action_space.shape[0]))
+
+                print(action)
+
 
 		new_state, reward, done, _ = env.step(action)
 		new_state = new_state.reshape((1, env.observation_space.shape[0]))
