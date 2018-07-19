@@ -84,7 +84,7 @@ class ActorCritic:
 		state_h1 = Dense(24, activation='relu')(state_input)
 		state_h2 = Dense(48)(state_h1)
 		
-		action_input = Input(shape=self.env.action_space.shape)
+		action_input = Input(shape=(1,))
 		action_h1    = Dense(48)(action_input)
 		
 		merged    = Add()([state_h2, action_h1])
@@ -183,10 +183,10 @@ def main():
 	cur_state = env.reset()
 	action = env.action_space.sample()
 	while True:
-		env.render()
+#		env.render()
 		cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
 		action = actor_critic.act(cur_state)
-		action = action.reshape((1, env.action_space.shape[0]))
+#		action = action.reshape((1, env.action_space.shape[0]))
 
 		new_state, reward, done, _ = env.step(action)
 		new_state = new_state.reshape((1, env.observation_space.shape[0]))

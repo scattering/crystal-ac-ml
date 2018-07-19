@@ -36,7 +36,7 @@ class HklEnv(gym.Env):
 
         DATAPATH = os.path.abspath("/home/pycrysfml/hklgen/examples/sxtal")
         observedFile = os.path.join(DATAPATH,r"prnio.int")
-        infoFile = os.path.join(DATAPATH,r"prnio-opt.cfl")
+        infoFile = os.path.join(DATAPATH,r"prnio.cfl")
 
         #Read data
         self.spaceGroup, self.crystalCell, self.atomList = H.readInfo(infoFile)
@@ -66,17 +66,19 @@ class HklEnv(gym.Env):
 ##        return [seed]
 
     def step(self, actions):
-        self.step += 1
+        print("actions", actions)
+
+        self.steps += 1
         #TODO nfwalguiwra
         if self.state[actions] == 1:
             self.totReward -= 0.15
-            return self.state, (self.step > 300), -0.15  #stop only if step > 200
+            return self.state, (self.steps > 300), -0.15, {}  #stop only if step > 200
         else:
             self.state[actions] = 1
 
         #No repeats
-        self.visited.append(self.refList[actions.item()])
-        self.remainingActions.remove(actions.item())
+        self.visited.append(self.refList[actions])
+        self.remainingActions.remove(actions)
 
         #Find the data for this hkl value and add it to the model
         self.model.refList = H.ReflectionList(self.visited)
@@ -110,9 +112,9 @@ class HklEnv(gym.Env):
 
         self.totReward += reward
 
-        if (self.prevChisq != None and self.step > 50 and chisq < 50):
-            return self.state, True, 0.5
-        if (len(self.remainingActions) == 0 or self.step > 300):
+        if (self.prevChisq != None and self.steps > 50 and chisq < 50):
+            return self.state, True, 0.5, {}
+        if (len(self.remainingActions) == 0 or self.steps > 300):
 #            print(self.model.atomListModel.atomModels[0].z.value, self.prevChisq, self.totReward, self.step)
             terminal = True
         else:
@@ -123,9 +125,11 @@ class HklEnv(gym.Env):
 #        mpl.pyplot.savefig("state_space.png")
 
 
-        return self.state, terminal, reward
+        return self.state, terminal, reward, {}
 
     def reset(self):
+
+        print(self.crystalCell, self.spaceGroup, self.spaceGroup.xtalSystem.lower())
 
         #Make a cell
         cell = Mod.makeCell(self.crystalCell, self.spaceGroup.xtalSystem)
@@ -159,7 +163,7 @@ class HklEnv(gym.Env):
 
         self.totReward = 0
         self.prevChisq = None
-        self.step = 0
+        self.steps = 0
 
         self.state = np.zeros(len(self.refList))
         self.stateList = []
