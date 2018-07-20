@@ -85,8 +85,8 @@ class ActorCritic:
 		state_h2 = Dense(48)(state_h1)
 
 		action_input = Input(shape=(1,))
-		action_h1 = Dense(24, activation='relu')(action_input)
-		action_h2 = Dense(48)(action_h1)
+#		action_h1 = Dense(24, activation='relu')(action_input)
+		action_h2 = Dense(48)(action_input)
 
 		merged    = Add()([state_h2, action_h2])
 		merged_h1 = Dense(24, activation='relu')(merged)
@@ -115,10 +115,10 @@ class ActorCritic:
 	def _train_actor(self, samples):
 		for sample in samples:
 			cur_state, action, reward, new_state, _ = sample
-			predicted_action = self.actor_model.predict(cur_state)
+			predicted_action = np.argmax(self.actor_model.predict(cur_state))
 			grads = self.sess.run(self.critic_grads, feed_dict={
 				self.critic_state_input:  cur_state,
-				self.critic_action_input: predicted_action
+				self.critic_action_input: np.array([predicted_action])
 			})[0]
 
 			self.sess.run(self.optimize, feed_dict={
@@ -130,12 +130,12 @@ class ActorCritic:
 		for sample in samples:
 			cur_state, action, reward, new_state, done = sample
 			if not done:
-				target_action = self.target_actor_model.predict(new_state)
+				target_action = np.argmax(self.target_actor_model.predict(new_state))
 				future_reward = self.target_critic_model.predict(
-					[new_state, target_action])[0][0]
+					[new_state, np.array([target_action])])[0][0]
 				reward += self.gamma * future_reward
-                        print(cur_state, action, np.array([action]), reward)
-			self.critic_model.fit([cur_state, np.array([action])], reward, verbose=2)
+                        print("past if", cur_state, action, np.array([action]), reward)
+			self.critic_model.fit([cur_state, np.array([action])], np.array([reward]), verbose=2)
 		
 	def train(self):
 		batch_size = 32
