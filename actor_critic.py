@@ -90,7 +90,7 @@ class ActorCritic:
 
 		merged    = Add()([state_h2, action_h2])
 		merged_h1 = Dense(24, activation='relu')(merged)
-		output = Dense(1, activation='relu')(merged_h1)
+ 		output = Dense(1, activation='relu')(merged_h1)
 		model  = Model(input=[state_input,action_input], output=output)
 
 #		model = Sequential()
@@ -179,8 +179,7 @@ class ActorCritic:
 		self.epsilon *= self.epsilon_decay
 		if np.random.random() < self.epsilon:
 			return self.env.action_space.sample()
-		prediction = self.actor_model.predict(cur_state)
-                return np.argmax(prediction)
+		return np.argmax(self.actor_model.predict(cur_state))
 
 def main():
 	sess = tf.Session()
@@ -198,9 +197,7 @@ def main():
 		cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
 		action = actor_critic.act(cur_state)
 #		action = action.reshape((1, env.action_space.shape[0]))
-
                 print(action)
-
 
 		new_state, reward, done, _ = env.step(action)
                 print(reward, done)

@@ -66,6 +66,7 @@ class HklEnv(gym.Env):
 ##        return [seed]
 
     def step(self, actions):
+
         print("actions", actions)
 
         self.steps += 1
