@@ -83,13 +83,16 @@ class ActorCritic:
 		state_input = Input(shape=self.env.observation_space.shape)
 		state_h1 = Dense(24, activation='relu')(state_input)
 		state_h2 = Dense(48)(state_h1)
-		
+
+		print(self.env.action_space.shape)
+		#TODO FIGURE OUT WHAT TO SET THIS TO
 		action_input = Input(shape=self.env.action_space.shape)
+#		action_input = Input(shape = (198,))
 		action_h1    = Dense(48)(action_input)
 		
 		merged    = Add()([state_h2, action_h1])
 		merged_h1 = Dense(24, activation='relu')(merged)
-		output = Dense(1, activation='relu')(merged_h1)
+ 		output = Dense(1, activation='relu')(merged_h1)
 		model  = Model(input=[state_input,action_input], output=output)
 		
 		adam  = Adam(lr=0.001)
@@ -169,7 +172,7 @@ class ActorCritic:
 		self.epsilon *= self.epsilon_decay
 		if np.random.random() < self.epsilon:
 			return self.env.action_space.sample()
-		return self.actor_model.predict(cur_state)
+		return np.argmax(self.actor_model.predict(cur_state))
 
 def main():
 	sess = tf.Session()
@@ -183,10 +186,10 @@ def main():
 	cur_state = env.reset()
 	action = env.action_space.sample()
 	while True:
-		env.render()
+#		env.render()
 		cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
 		action = actor_critic.act(cur_state)
-		action = action.reshape((1, env.action_space.shape[0]))
+#		action = action.reshape((1, env.action_space.shape[0]))
 
 		new_state, reward, done, _ = env.step(action)
 		new_state = new_state.reshape((1, env.observation_space.shape[0]))
