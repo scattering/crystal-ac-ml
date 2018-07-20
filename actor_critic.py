@@ -83,15 +83,24 @@ class ActorCritic:
 		state_input = Input(shape=self.env.observation_space.shape)
 		state_h1 = Dense(24, activation='relu')(state_input)
 		state_h2 = Dense(48)(state_h1)
-		
+
 		action_input = Input(shape=(1,))
-		action_h1    = Dense(48)(action_input)
-		
-		merged    = Add()([state_h2, action_h1])
+		action_h1 = Dense(24, activation='relu')(action_input)
+		action_h2 = Dense(48)(action_h1)
+
+		merged    = Add()([state_h2, action_h2])
 		merged_h1 = Dense(24, activation='relu')(merged)
 		output = Dense(1, activation='relu')(merged_h1)
 		model  = Model(input=[state_input,action_input], output=output)
-		
+
+#		model = Sequential()
+#		model.add(Dense(24, input_shape=self.env.observation_space.shape))
+#		model.add(Activation('relu'))
+#		model.add(Dense(48)
+#		model.add(Activation('relu'))
+#		model.add(Dense(1))
+#		model.add(Activation('relu'))
+
 		adam  = Adam(lr=0.001)
 		model.compile(loss="mse", optimizer=adam)
 		return state_input, action_input, model
@@ -125,8 +134,8 @@ class ActorCritic:
 				future_reward = self.target_critic_model.predict(
 					[new_state, target_action])[0][0]
 				reward += self.gamma * future_reward
-                        print(cur_state, action)
-			self.critic_model.fit([cur_state, action], reward, verbose=1)
+                        print(cur_state, action, np.array([action]), reward)
+			self.critic_model.fit([cur_state, np.array([action])], reward, verbose=2)
 		
 	def train(self):
 		batch_size = 32
@@ -194,6 +203,7 @@ def main():
 
 
 		new_state, reward, done, _ = env.step(action)
+                print(reward, done)
 		new_state = new_state.reshape((1, env.observation_space.shape[0]))
 
 		actor_critic.remember(cur_state, action, reward, new_state, done)

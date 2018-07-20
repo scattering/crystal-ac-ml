@@ -72,7 +72,7 @@ class HklEnv(gym.Env):
         #TODO nfwalguiwra
         if self.state[actions] == 1:
             self.totReward -= 0.15
-            return self.state, (self.steps > 300), -0.15, {}  #stop only if step > 200
+            return self.state, -0.15, (self.steps > 300), {}  #stop only if step > 200
         else:
             self.state[actions] = 1
 
@@ -113,7 +113,7 @@ class HklEnv(gym.Env):
         self.totReward += reward
 
         if (self.prevChisq != None and self.steps > 50 and chisq < 50):
-            return self.state, True, 0.5, {}
+            return self.state, 0.5, True, {}
         if (len(self.remainingActions) == 0 or self.steps > 300):
 #            print(self.model.atomListModel.atomModels[0].z.value, self.prevChisq, self.totReward, self.step)
             terminal = True
@@ -125,7 +125,7 @@ class HklEnv(gym.Env):
 #        mpl.pyplot.savefig("state_space.png")
 
 
-        return self.state, terminal, reward, {}
+        return self.state, reward, terminal, {}
 
     def reset(self):
 
