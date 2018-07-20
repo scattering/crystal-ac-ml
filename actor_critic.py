@@ -41,8 +41,9 @@ class ActorCritic:
 		_, self.target_actor_model = self.create_actor_model()
 
 		self.actor_critic_grad = tf.placeholder(tf.float32, 
-			[None, self.env.action_space.n]) # where we will feed de/dC (from critic)
-		
+			[None, 1]) # where we will feed de/dC (from critic)
+		#TODO ^^^ could be very wrong setup
+
 		actor_model_weights = self.actor_model.trainable_weights
 		self.actor_grads = tf.gradients(self.actor_model.output, 
 			actor_model_weights, -self.actor_critic_grad) # dC/dA (from actor)
@@ -86,9 +87,9 @@ class ActorCritic:
 
 		action_input = Input(shape=(1,))
 #		action_h1 = Dense(24, activation='relu')(action_input)
-		action_h2 = Dense(48)(action_input)
+		action_h1 = Dense(48)(action_input)
 
-		merged    = Add()([state_h2, action_h2])
+		merged    = Add()([state_h2, action_h1])
 		merged_h1 = Dense(24, activation='relu')(merged)
  		output = Dense(1, activation='relu')(merged_h1)
 		model  = Model(input=[state_input,action_input], output=output)
@@ -116,9 +117,10 @@ class ActorCritic:
 		for sample in samples:
 			cur_state, action, reward, new_state, _ = sample
 			predicted_action = np.argmax(self.actor_model.predict(cur_state))
+                        print(cur_state, "<- state", predicted_action, self.critic_state_input, self.critic_action_input)
 			grads = self.sess.run(self.critic_grads, feed_dict={
 				self.critic_state_input:  cur_state,
-				self.critic_action_input: np.array([predicted_action])
+				self.critic_action_input: np.array([[predicted_action]])
 			})[0]
 
 			self.sess.run(self.optimize, feed_dict={
