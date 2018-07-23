@@ -42,14 +42,14 @@ class ActorCritic:
 
 		self.actor_critic_grad = tf.placeholder(tf.float32, 
 			[None, 1]) # where we will feed de/dC (from critic)
-		#TODO ^^^ could be very wrong setup
 
 		actor_model_weights = self.actor_model.trainable_weights
 		self.actor_grads = tf.gradients(self.actor_model.output, 
 			actor_model_weights, -self.actor_critic_grad) # dC/dA (from actor)
+ #               print("act grads", self.actor_grads)
 		grads = zip(self.actor_grads, actor_model_weights)
-		self.optimize = tf.train.AdamOptimizer(self.learning_rate).apply_gradients(grads)
-
+#		self.optimize = tf.train.AdamOptimizer(self.learning_rate).apply_gradients(grads)
+#                print("opt", self.optimize)
 		# ===================================================================== #
 		#                              Critic Model                             #
 		# ===================================================================== #		
@@ -57,10 +57,12 @@ class ActorCritic:
 		self.critic_state_input, self.critic_action_input, \
 			self.critic_model = self.create_critic_model()
 		_, _, self.target_critic_model = self.create_critic_model()
+                print("--------------",self.critic_model.output, self.critic_action_input)
 
 		self.critic_grads = tf.gradients(self.critic_model.output, 
 			self.critic_action_input) # where we calcaulte de/dC for feeding above
-		
+
+ #               print("critic grads", self.critic_grads)
 		# Initialize for later gradient calculations
 		self.sess.run(tf.initialize_all_variables())
 
@@ -74,7 +76,7 @@ class ActorCritic:
 		h2 = Dense(48, activation='relu')(h1)
 		h3 = Dense(24, activation='relu')(h2)
 		output = Dense(self.env.action_space.n, activation='relu')(h3)  #edited shape
-		
+
 		model = Model(input=state_input, output=output)
 		adam  = Adam(lr=0.001)
 		model.compile(loss="mse", optimizer=adam)
@@ -117,12 +119,13 @@ class ActorCritic:
 		for sample in samples:
 			cur_state, action, reward, new_state, _ = sample
 			predicted_action = np.argmax(self.actor_model.predict(cur_state))
-                        print(cur_state, "<- state", predicted_action, self.critic_state_input, self.critic_action_input)
+#                        print(cur_state, "<- state", predicted_action, self.critic_state_input, self.critic_action_input)
 			grads = self.sess.run(self.critic_grads, feed_dict={
 				self.critic_state_input:  cur_state,
 				self.critic_action_input: np.array([[predicted_action]])
 			})[0]
 
+#                        print(grads)
 			self.sess.run(self.optimize, feed_dict={
 				self.actor_state_input: cur_state,
 				self.actor_critic_grad: grads
@@ -136,8 +139,8 @@ class ActorCritic:
 				future_reward = self.target_critic_model.predict(
 					[new_state, np.array([target_action])])[0][0]
 				reward += self.gamma * future_reward
-                        print("past if", cur_state, action, np.array([action]), reward)
-			self.critic_model.fit([cur_state, np.array([action])], np.array([reward]), verbose=2)
+#                        print("past if", cur_state, action, np.array([action]), reward)
+			self.critic_model.fit([cur_state, np.array([action])], np.array([reward]), verbose=0)
 		
 	def train(self):
 		batch_size = 32
@@ -155,11 +158,11 @@ class ActorCritic:
 
 	def _update_actor_target(self):
 		actor_model_weights  = self.actor_model.get_weights()
-		actor_target_weights = self.target_critic_model.get_weights()
+		actor_target_weights = self.target_actor_model.get_weights()
 		
 		for i in range(len(actor_target_weights)):
 			actor_target_weights[i] = actor_model_weights[i]
-		self.target_critic_model.set_weights(actor_target_weights)
+		self.target_actor_model.set_weights(actor_target_weights)
 
 	def _update_critic_target(self):
 		critic_model_weights  = self.critic_model.get_weights()
@@ -199,10 +202,10 @@ def main():
 		cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
 		action = actor_critic.act(cur_state)
 #		action = action.reshape((1, env.action_space.shape[0]))
-                print(action)
+#                print(action)
 
 		new_state, reward, done, _ = env.step(action)
-                print(reward, done)
+                print(action, reward)
 		new_state = new_state.reshape((1, env.observation_space.shape[0]))
 
 		actor_critic.remember(cur_state, action, reward, new_state, done)
