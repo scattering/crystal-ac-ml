@@ -59,16 +59,20 @@ class HklEnv(gym.Env):
         print(self.action_space.shape)
         print(self.action_space.sample())
 
+	self.episodeNum = 0
         self.reset()
 
 ##    def seed(self, seed=None):
 ##        self.np_random, seed = seeding.np_random(seed)
 ##        return [seed]
 
+    def epStep(self):
+	self.episodeNum += 1
+
     def step(self, actions):
 
         print("actions", actions)
-
+	chisq = None
         self.steps += 1
         #TODO nfwalguiwra
         if self.state[actions] == 1:
@@ -125,8 +129,11 @@ class HklEnv(gym.Env):
 #        fig = mpl.pyplot.pcolor(self.stateList, cmap="RdBu" )
 #        mpl.pyplot.savefig("state_space.png")
 
+	file = open("ac_results" + str(self.episodeNum) + ".txt", "a")
+	file.write(str(self.refList[actions]).replace("[","").replace("]","").replace(",","") + "\t\t" + str(reward) + "\t" + str(self.totReward) + "\t" + str(chisq) + "\t" + str(self.model.atomListModel.atomModels[0].z.value) + "\n")
+	file.close()
 
-        return self.state, reward, terminal, {}
+        return self.state, reward, terminal, {} #, chisq, self.model.atomListModel.atomModels[0].z.value, self.refList[actions]
 
     def reset(self):
 
@@ -168,6 +175,10 @@ class HklEnv(gym.Env):
 
         self.state = np.zeros(len(self.refList))
         self.stateList = []
+
+	file = open("ac_results" + str(self.episodeNum) + ".txt", "w")
+	file.write("HKL\t\tReward\ttotReward\tchisq\tz approx")
+	file.close()
 
         return self.state
 

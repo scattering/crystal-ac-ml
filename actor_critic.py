@@ -193,28 +193,54 @@ def main():
 	sess = tf.Session()
 	K.set_session(sess)
 	env = gym.make("hkl-v0")
+	env = env.unwrapped
 	actor_critic = ActorCritic(env, sess)
 
-	num_trials = 10000
+	num_trials = 500
 	trial_len  = 500
 
 	cur_state = env.reset()
-	action = env.action_space.sample()
-	while True:
-#		env.render()
-		cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
-		action = actor_critic.act(cur_state)
-		action = action.reshape((1, env.action_space.n))
+#       action = env.action_space.sample()
+#        ep = 0
+        done = False
+        totreward = 0
+#	chisq = 0
+#	z = 0
+#	hkl = 0
+#        while ep < num_trials:
+	for ep in range(num_trials):
+	    print("Episode #" + str(ep))
+
+#	    file = open("ac_results" + str(ep) + ".txt", "w") 
+#	    file.write("HKL\t\tReward\ttotReward\tchisq\tz approx")
+
+            while done is False:
+
+                cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
+                action = actor_critic.act(cur_state)
+                action = action.reshape((1, env.action_space.n))
 #                print(action)
 
-		new_state, reward, done, _ = env.step(np.argmax(action))
+                new_state, reward, done, _ = env.step(np.argmax(action))
+                totreward += reward
+#		file.write(str(hkl) + "\t\t" + str(reward) + "\t" + str(totreward) + "\t" + str(chisq) + "\t" + str(z))
 #                print(action, reward)
-		new_state = new_state.reshape((1, env.observation_space.shape[0]))
+                new_state = new_state.reshape((1, env.observation_space.shape[0]))
 
-		actor_critic.remember(cur_state, action, reward, new_state, done)
-		actor_critic.train()
+                actor_critic.remember(cur_state, action, reward, new_state, done)
+                actor_critic.train()
 
-		cur_state = new_state
+                cur_state = new_state
+
+#	    file.close()
+            print(totreward)
+            totreward = 0
+#	    env.episodeNum += 1
+	    env.epStep()
+            env.reset()
+#            ep +=1
+            done = False
+
 
 if __name__ == "__main__":
 	main()
