@@ -41,18 +41,18 @@ class ActorCritic:
 		_, self.target_actor_model = self.create_actor_model()
 
 		self.actor_critic_grad = tf.placeholder(tf.float32, 
-			[None, 1]) # where we will feed de/dC (from critic)
+			[None, 198]) # where we will feed de/dC (from critic)
 
 		actor_model_weights = self.actor_model.trainable_weights
 		self.actor_grads = tf.gradients(self.actor_model.output, 
 			actor_model_weights, -self.actor_critic_grad) # dC/dA (from actor)
  #               print("act grads", self.actor_grads)
 		grads = zip(self.actor_grads, actor_model_weights)
-#		self.optimize = tf.train.AdamOptimizer(self.learning_rate).apply_gradients(grads)
+		self.optimize = tf.train.AdamOptimizer(self.learning_rate).apply_gradients(grads)
 #                print("opt", self.optimize)
 		# ===================================================================== #
 		#                              Critic Model                             #
-		# ===================================================================== #		
+		# ===================================================================== #
 
 		self.critic_state_input, self.critic_action_input, \
 			self.critic_model = self.create_critic_model()
@@ -87,7 +87,7 @@ class ActorCritic:
 		state_h1 = Dense(24, activation='relu')(state_input)
 		state_h2 = Dense(48)(state_h1)
 
-		action_input = Input(shape=(1,))
+		action_input = Input(shape=(198,))
 #		action_h1 = Dense(24, activation='relu')(action_input)
 		action_h1 = Dense(48)(action_input)
 
@@ -118,11 +118,11 @@ class ActorCritic:
 	def _train_actor(self, samples):
 		for sample in samples:
 			cur_state, action, reward, new_state, _ = sample
-			predicted_action = np.argmax(self.actor_model.predict(cur_state))
+			predicted_action = self.actor_model.predict(cur_state)
 #                        print(cur_state, "<- state", predicted_action, self.critic_state_input, self.critic_action_input)
 			grads = self.sess.run(self.critic_grads, feed_dict={
 				self.critic_state_input:  cur_state,
-				self.critic_action_input: np.array([[predicted_action]])
+				self.critic_action_input: predicted_action
 			})[0]
 
 #                        print(grads)
@@ -135,12 +135,12 @@ class ActorCritic:
 		for sample in samples:
 			cur_state, action, reward, new_state, done = sample
 			if not done:
-				target_action = np.argmax(self.target_actor_model.predict(new_state))
+				target_action = self.target_actor_model.predict(new_state)
 				future_reward = self.target_critic_model.predict(
-					[new_state, np.array([target_action])])[0][0]
+					[new_state, target_action])[0][0]
 				reward += self.gamma * future_reward
 #                        print("past if", cur_state, action, np.array([action]), reward)
-			self.critic_model.fit([cur_state, np.array([action])], np.array([reward]), verbose=0)
+			self.critic_model.fit([cur_state, action], np.array([reward]), verbose=2)
 		
 	def train(self):
 		batch_size = 32
@@ -183,8 +183,11 @@ class ActorCritic:
 	def act(self, cur_state):
 		self.epsilon *= self.epsilon_decay
 		if np.random.random() < self.epsilon:
-			return self.env.action_space.sample()
-		return np.argmax(self.actor_model.predict(cur_state))
+                        action = self.env.action_space.sample()
+                        actionArr = np.zeros(self.env.action_space.n)
+                        actionArr[action] = 1
+                        return actionArr
+		return self.actor_model.predict(cur_state)
 
 def main():
 	sess = tf.Session()
@@ -201,11 +204,11 @@ def main():
 #		env.render()
 		cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
 		action = actor_critic.act(cur_state)
-#		action = action.reshape((1, env.action_space.shape[0]))
+		action = action.reshape((1, env.action_space.n))
 #                print(action)
 
-		new_state, reward, done, _ = env.step(action)
-                print(action, reward)
+		new_state, reward, done, _ = env.step(np.argmax(action))
+#                print(action, reward)
 		new_state = new_state.reshape((1, env.observation_space.shape[0]))
 
 		actor_critic.remember(cur_state, action, reward, new_state, done)
