@@ -16,6 +16,10 @@ import tensorflow as tf
 import random
 from collections import deque
 
+import matplotlib as mpl
+mpl.use('Agg')
+import matplotlib.pyplot as plt
+
 # determines how to assign values to each state, i.e. takes the state
 # and action (two-input model) and determines the corresponding value
 class ActorCritic:
@@ -25,7 +29,7 @@ class ActorCritic:
 
 		self.learning_rate = 0.001
 		self.epsilon = 1.0
-		self.epsilon_decay = .995
+		self.epsilon_decay = .9995
 		self.gamma = .95
 		self.tau   = .125
 
@@ -140,7 +144,7 @@ class ActorCritic:
 					[new_state, target_action])[0][0]
 				reward += self.gamma * future_reward
 #                        print("past if", cur_state, action, np.array([action]), reward)
-			self.critic_model.fit([cur_state, action], np.array([reward]), verbose=2)
+			self.critic_model.fit([cur_state, action], np.array([reward]), verbose=0)
 		
 	def train(self):
 		batch_size = 32
@@ -180,14 +184,25 @@ class ActorCritic:
 	#                              Model Predictions                            #
 	# ========================================================================= #
 
-	def act(self, cur_state):
+	def act(self, cur_state, actions_taken):
 		self.epsilon *= self.epsilon_decay
 		if np.random.random() < self.epsilon:
-                        action = self.env.action_space.sample()
-                        actionArr = np.zeros(self.env.action_space.n)
-                        actionArr[action] = 1
-                        return actionArr
-		return self.actor_model.predict(cur_state)
+                        action_choices = np.random.uniform(0, 1, self.env.action_space.n) - actions_taken
+#                        action = self.env.action_space.sample()
+#                        print("sample")
+                else:
+                        prediction = self.actor_model.predict(cur_state)[0]
+                        #normalize prediction so no element is >1, and remove all previously chosen elments
+                        action_choices = prediction/(prediction[np.argmax(prediction)]) - actions_taken
+
+#                print(action_choices)
+                action = np.argmax(action_choices)
+#                print(action)
+
+                action_vec = np.zeros(self.env.action_space.n)
+                action_vec[action] = 1
+                actions_taken[action] = 1
+                return action_vec, actions_taken
 
 def main():
 	sess = tf.Session()
@@ -195,19 +210,29 @@ def main():
 	env = gym.make("hkl-v0")
 	actor_critic = ActorCritic(env, sess)
 
-	num_trials = 10000
-	trial_len  = 500
+	num_trials = 100
 
 	cur_state = env.reset()
-	action = env.action_space.sample()
-	while True:
-#		env.render()
+#	action = env.action_space.sample()
+        ep = 0
+        done = False
+        totreward = 0
+        rewardsLog = []
+
+	while ep < num_trials:
+
+            actions_taken = np.zeros(env.action_space.n)
+
+            while done is False:
+
 		cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
-		action = actor_critic.act(cur_state)
+		action, actions_taken = actor_critic.act(cur_state, actions_taken)
+
 		action = action.reshape((1, env.action_space.n))
 #                print(action)
 
 		new_state, reward, done, _ = env.step(np.argmax(action))
+                totreward += reward
 #                print(action, reward)
 		new_state = new_state.reshape((1, env.observation_space.shape[0]))
 
@@ -215,6 +240,18 @@ def main():
 		actor_critic.train()
 
 		cur_state = new_state
+
+#            print(totreward)
+            rewardsLog.append(totreward)
+            totreward = 0
+            cur_state = env.reset()
+            ep +=1
+            done = False
+
+        plt.plot(rewardsLog)
+        plt.xlabel("Episode")
+        plt.ylabel("Total Reward")
+        plt.savefig("/mnt/storage/ac-rewards-no-repeat.png")
 
 if __name__ == "__main__":
 	main()

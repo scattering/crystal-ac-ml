@@ -26,10 +26,6 @@ from bumps.formatnum import format_uncertainty_pm
 #from tensorforce.environments import Environment
 
 class HklEnv(gym.Env):
-    metadata = {
-        'render.modes': ['human', 'rgb_array'],
-        'video.frames_per_second' : 50
-    }
 
     def __init__(self):
 
@@ -53,11 +49,11 @@ class HklEnv(gym.Env):
 
         self.observation_space = spaces.MultiBinary(len(self.refList))
         self.action_space = spaces.Discrete(len(self.refList))
-        print(self.observation_space.shape)
-        print(self.observation_space.sample())
+#        print(self.observation_space.shape)
+#        print(self.observation_space.sample())
 
-        print(self.action_space.shape)
-        print(self.action_space.sample())
+#        print(self.action_space.shape)
+#        print(self.action_space.sample())
 
         self.reset()
 
@@ -67,13 +63,12 @@ class HklEnv(gym.Env):
 
     def step(self, actions):
 
-        print("actions", actions)
-
         self.steps += 1
         #TODO nfwalguiwra
         if self.state[actions] == 1:
-            self.totReward -= 0.15
-            return self.state, -0.15, (self.steps > 300), {}  #stop only if step > 200
+            self.totReward -= 2
+            print("***REPEAT*****")
+            return self.state, -2, (self.steps > 300), {}  #stop only if step > 200
         else:
             self.state[actions] = 1
 
@@ -92,8 +87,7 @@ class HklEnv(gym.Env):
         self.model._set_observations(self.observed)
         self.model.update()
 
-
-        reward = -0.1
+        reward = -1
 
         #Need more data than parameters, have to wait to the second step to fit
         if len(self.visited) > 1:
@@ -105,7 +99,7 @@ class HklEnv(gym.Env):
 #            stderr = lsqerr.stderr(problem.cov())
 
             if (self.prevChisq != None and chisq < self.prevChisq):
-                reward = 0.1
+                reward = 1
 
             self.prevChisq = chisq
 
@@ -113,10 +107,12 @@ class HklEnv(gym.Env):
 
         self.totReward += reward
 
-        if (self.prevChisq != None and self.steps > 50 and chisq < 50):
+        print(actions, self.prevChisq, self.model.atomListModel.atomModels[0].z.value)
+        if (self.prevChisq != None and len(self.visited) > 50 and chisq < 5):
+            print(self.model.atomListModel.atomModels[0].z.value, self.prevChisq, self.totReward, self.steps)
             return self.state, 0.5, True, {}
         if (len(self.remainingActions) == 0 or self.steps > 300):
-#            print(self.model.atomListModel.atomModels[0].z.value, self.prevChisq, self.totReward, self.step)
+            print(self.model.atomListModel.atomModels[0].z.value, self.prevChisq, self.totReward, self.steps)
             terminal = True
         else:
             terminal = False
@@ -130,7 +126,7 @@ class HklEnv(gym.Env):
 
     def reset(self):
 
-        print(self.crystalCell, self.spaceGroup, self.spaceGroup.xtalSystem.lower())
+#        print(self.crystalCell, self.spaceGroup, self.spaceGroup.xtalSystem.lower())
 
         #Make a cell
         cell = Mod.makeCell(self.crystalCell, self.spaceGroup.xtalSystem)
@@ -181,7 +177,7 @@ class HklEnv(gym.Env):
         x, dx = fitted.solve()
 #        print(problem.chisq())
 #        print("after", lsqerr.stderr(problem.cov()))
-        return x, dx, lsqerr.stderr(problem.cov())
+        return x, dx, problem.chisq()
 
     
 
