@@ -208,9 +208,10 @@ def main():
 	sess = tf.Session()
 	K.set_session(sess)
 	env = gym.make("hkl-v0")
+	env = env.unwrapped
 	actor_critic = ActorCritic(env, sess)
 
-	num_trials = 100
+	num_trials = 50
 
 	cur_state = env.reset()
 #	action = env.action_space.sample()
@@ -234,12 +235,22 @@ def main():
 		new_state, reward, done, _ = env.step(np.argmax(action))
                 totreward += reward
 #                print(action, reward)
-		new_state = new_state.reshape((1, env.observation_space.shape[0]))
+                new_state = new_state.reshape((1, env.observation_space.shape[0]))
 
-		actor_critic.remember(cur_state, action, reward, new_state, done)
-		actor_critic.train()
+                actor_critic.remember(cur_state, action, reward, new_state, done)
+                actor_critic.train()
 
-		cur_state = new_state
+                cur_state = new_state
+
+#	    file.close()
+            print(totreward)
+            totreward = 0
+#	    env.episodeNum += 1
+	    env.epStep()
+            env.reset()
+#            ep +=1
+            done = False
+
 
 #            print(totreward)
             rewardsLog.append(totreward)
