@@ -49,18 +49,9 @@ class HklEnv(gym.Env):
 
         self.observation_space = spaces.MultiBinary(len(self.refList))
         self.action_space = spaces.Discrete(len(self.refList))
-#        print(self.observation_space.shape)
-#        print(self.observation_space.sample())
-
-#        print(self.action_space.shape)
-#        print(self.action_space.sample())
 
 	self.episodeNum = 0
         self.reset()
-
-##    def seed(self, seed=None):
-##        self.np_random, seed = seeding.np_random(seed)
-##        return [seed]
 
     def epStep(self):
 	self.episodeNum += 1
@@ -70,13 +61,6 @@ class HklEnv(gym.Env):
 	chisq = None
 
         self.steps += 1
-        #TODO nfwalguiwra
-        if self.state[actions] == 1:
-            self.totReward -= 2
-            print("***REPEAT*****")
-            return self.state, -2, (self.steps > 300), {}  #stop only if step > 200
-        else:
-            self.state[actions] = 1
 
         #No repeats
         self.visited.append(self.refList[actions])
@@ -93,74 +77,43 @@ class HklEnv(gym.Env):
         self.model._set_observations(self.observed)
         self.model.update()
 
-        reward = -1
+        reward = -0.1
 
         #Need more data than parameters, have to wait to the second step to fit
         if len(self.visited) > 1:
 
             x, dx, chisq = self.fit(self.model)
-#            print(x, chisq)
-
-#            problem = bumps.FitProblem(self.model)
-#            stderr = lsqerr.stderr(problem.cov())
 
             if (self.prevChisq != None and chisq < self.prevChisq):
-                reward = 1
+                reward = 1/(chisq*10)
 
             self.prevChisq = chisq
 
-#            print(x,"\n", stderr,"\n", reward, "\n")
-
         self.totReward += reward
 
-        print(actions, self.prevChisq, self.model.atomListModel.atomModels[0].z.value)
         if (self.prevChisq != None and len(self.visited) > 50 and chisq < 5):
-            print(self.model.atomListModel.atomModels[0].z.value, self.prevChisq, self.totReward, self.steps)
-            return self.state, 0.5, True, {}
+            return self.state, 1, True, {"chi": self.prevChisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions].hkl}
         if (len(self.remainingActions) == 0 or self.steps > 300):
-            print(self.model.atomListModel.atomModels[0].z.value, self.prevChisq, self.totReward, self.steps)
             terminal = True
         else:
             terminal = False
 
-#        self.stateList.append(self.state.copy())
-#        fig = mpl.pyplot.pcolor(self.stateList, cmap="RdBu" )
-#        mpl.pyplot.savefig("state_space.png")
-
-	file = open("ac_results" + str(self.episodeNum) + ".txt", "a")
-	file.write(str(self.refList[actions]).replace("[","").replace("]","").replace(",","") + "\t\t" + str(reward) + "\t" + str(self.totReward) + "\t" + str(chisq) + "\t" + str(self.model.atomListModel.atomModels[0].z.value) + "\n")
-	file.close()
-
-        return self.state, reward, terminal, {} #, chisq, self.model.atomListModel.atomModels[0].z.value, self.refList[actions]
+        return self.state, reward, terminal, {"chi": self.prevChisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions].hkl} #, chisq, self.model.atomListModel.atomModels[0].z.value, self.refList[actions]
 
     def reset(self):
-
-#        print(self.crystalCell, self.spaceGroup, self.spaceGroup.xtalSystem.lower())
 
         #Make a cell
         cell = Mod.makeCell(self.crystalCell, self.spaceGroup.xtalSystem)
 
-        #TODO: make model thru tensorforce, not here
         #Define a model
         self.model = S.Model([], [], self.backg, self.wavelength, self.spaceGroup, cell,
                     [self.atomList], self.exclusions,
                     scale=0.06298, error=[],  extinction=[0.0001054])
 
         #Set a range on the x value of the first atom in the model
-        self.model.atomListModel.atomModels[0].z.value = 0.3
+        self.model.atomListModel.atomModels[0].z.value = 0.25
         self.model.atomListModel.atomModels[0].z.range(0,0.5)
-#        self.model.atomListModel.atomModels[0].B.range(0, 5)
-#        self.model.atomListModel.atomModels[1].B.range(0,5)
-#        self.model.atomListModel.atomModels[2].B.range(0,5)
-#        self.model.atomListModel.atomModels[3].z.range(0,0.5)
-#        self.model.atomListModel.atomModels[3].B.range(0,5)
-#        self.model.atomListModel.atomModels[4].B.range(0,5)
-#        self.model.atomListModel.atomModels[5].x.range(0,0.5)
-#        self.model.atomListModel.atomModels[5].y.range(0,0.5)
-#        self.model.atomListModel.atomModels[5].z.range(0,0.5)
-#        self.model.atomListModel.atomModels[5].B.range(0,5)
 
-        #TODO: clean up excess vars
         self.visited = []
         self.observed = []
         self.remainingActions = []
@@ -174,10 +127,6 @@ class HklEnv(gym.Env):
         self.state = np.zeros(len(self.refList))
         self.stateList = []
 
-	file = open("ac_results" + str(self.episodeNum) + ".txt", "w")
-	file.write("HKL\t\tReward\ttotReward\tchisq\tz approx")
-	file.close()
-
         return self.state
 
     def fit(self, model):
@@ -185,14 +134,9 @@ class HklEnv(gym.Env):
         #Create a problem from the model with bumps,
         #then fit and solve it
         problem = bumps.FitProblem(model)
-#        print("before: ", lsqerr.stderr(problem.cov()))
         fitted = fitter.LevenbergMarquardtFit(problem)
         x, dx = fitted.solve()
-#        print(problem.chisq())
-#        print("after", lsqerr.stderr(problem.cov()))
         return x, dx, problem.chisq()
-
-    
 
     @property
     def states(self):
@@ -200,18 +144,4 @@ class HklEnv(gym.Env):
 
     @property
     def actions(self):
-
-        #TODO limit to remaining options (no repeats)
-        #TODO set up to have the hkls, so it can be generalized
         return dict(num_actions=len(self.refList), type='int')
-
-#    @actions.setter
-#    def actions(self, value):
-#        self._actions = value
-
-
-
-
-            
-
-        
