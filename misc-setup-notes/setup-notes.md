@@ -21,7 +21,9 @@ Run a dream fit
  * Download xming on your machine with graphics and run it - this needs to be active to forward graphics to your machine
  * Go into Putty settings: connection/SSH/X11 and enable X11 forwarding
  * Run a docker container with this tag:
+
     -v /storage/yourDir/:/path/in/container/
+
    This mounts the storage directory to your docker container
  * Write images to a png in /path/in/container/
  * Exit the docker container and access the png files in /storage/yourDir/
