@@ -1,1 +1,0 @@
-HKL		Reward	totReward	chisq	z approx<fswig_hklgen.Reflection; proxy of <Swig Object of type 'reflection_type *' at 0x7ffa7052af60> >		-0.1	-0.1	None	0.3

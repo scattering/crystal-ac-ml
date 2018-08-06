@@ -1,5 +1,0 @@
-HKL		Reward	totReward	chisq	z approx<fswig_hklgen.Reflection; proxy of <Swig Object of type 'reflection_type *' at 0x7ffa7b6bb630> >		-0.1	-0.1	None	0.3
-<fswig_hklgen.Reflection; proxy of <Swig Object of type 'reflection_type *' at 0x7ffa7b6bb540> >		-0.1	-0.95	[0.00428885]	0.2985304017246633
-<fswig_hklgen.Reflection; proxy of <Swig Object of type 'reflection_type *' at 0x7ffa7b6bb540> >		0.1	-0.85	[0.00381318]	0.2985134244984463
-<fswig_hklgen.Reflection; proxy of <Swig Object of type 'reflection_type *' at 0x7ffa7b6bb570> >		-0.1	-2.15	[0.0041637]	0.2974791462530122
-<fswig_hklgen.Reflection; proxy of <Swig Object of type 'reflection_type *' at 0x7ffa7b6bb750> >		0.1	-4.15	[0.0019188]	0.3284836814304504
