@@ -1,4 +1,5 @@
 """
+Code adapted frm:
 https://towardsdatascience.com/reinforcement-learning-w-keras-openai-actor-critic-models-f084612cfd69
 solving pendulum using actor-critic model
 """
@@ -20,9 +21,8 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 
-# determines how to assign values to each state, i.e. takes the state
-# and action (two-input model) and determines the corresponding value
 class ActorCritic:
+
 	def __init__(self, env, sess):
 		self.env  = env
 		self.sess = sess
@@ -50,10 +50,10 @@ class ActorCritic:
 		actor_model_weights = self.actor_model.trainable_weights
 		self.actor_grads = tf.gradients(self.actor_model.output, 
 			actor_model_weights, -self.actor_critic_grad) # dC/dA (from actor)
- #               print("act grads", self.actor_grads)
+
 		grads = zip(self.actor_grads, actor_model_weights)
 		self.optimize = tf.train.AdamOptimizer(self.learning_rate).apply_gradients(grads)
-#                print("opt", self.optimize)
+
 		# ===================================================================== #
 		#                              Critic Model                             #
 		# ===================================================================== #
@@ -61,12 +61,10 @@ class ActorCritic:
 		self.critic_state_input, self.critic_action_input, \
 			self.critic_model = self.create_critic_model()
 		_, _, self.target_critic_model = self.create_critic_model()
-                print("--------------",self.critic_model.output, self.critic_action_input)
 
 		self.critic_grads = tf.gradients(self.critic_model.output, 
 			self.critic_action_input) # where we calcaulte de/dC for feeding above
 
- #               print("critic grads", self.critic_grads)
 		# Initialize for later gradient calculations
 		self.sess.run(tf.initialize_all_variables())
 
@@ -92,21 +90,12 @@ class ActorCritic:
 		state_h2 = Dense(48)(state_h1)
 
 		action_input = Input(shape=(198,))
-#		action_h1 = Dense(24, activation='relu')(action_input)
 		action_h1 = Dense(48)(action_input)
 
 		merged    = Add()([state_h2, action_h1])
 		merged_h1 = Dense(24, activation='relu')(merged)
  		output = Dense(1, activation='relu')(merged_h1)
 		model  = Model(input=[state_input,action_input], output=output)
-
-#		model = Sequential()
-#		model.add(Dense(24, input_shape=self.env.observation_space.shape))
-#		model.add(Activation('relu'))
-#		model.add(Dense(48)
-#		model.add(Activation('relu'))
-#		model.add(Dense(1))
-#		model.add(Activation('relu'))
 
 		adam  = Adam(lr=0.001)
 		model.compile(loss="mse", optimizer=adam)
@@ -123,18 +112,16 @@ class ActorCritic:
 		for sample in samples:
 			cur_state, action, reward, new_state, _ = sample
 			predicted_action = self.actor_model.predict(cur_state)
-#                        print(cur_state, "<- state", predicted_action, self.critic_state_input, self.critic_action_input)
 			grads = self.sess.run(self.critic_grads, feed_dict={
 				self.critic_state_input:  cur_state,
 				self.critic_action_input: predicted_action
 			})[0]
 
-#                        print(grads)
 			self.sess.run(self.optimize, feed_dict={
 				self.actor_state_input: cur_state,
 				self.actor_critic_grad: grads
 			})
-            
+
 	def _train_critic(self, samples):
 		for sample in samples:
 			cur_state, action, reward, new_state, done = sample
@@ -143,9 +130,8 @@ class ActorCritic:
 				future_reward = self.target_critic_model.predict(
 					[new_state, target_action])[0][0]
 				reward += self.gamma * future_reward
-#                        print("past if", cur_state, action, np.array([action]), reward)
 			self.critic_model.fit([cur_state, action], np.array([reward]), verbose=0)
-		
+
 	def train(self):
 		batch_size = 32
 		if len(self.memory) < batch_size:
@@ -163,7 +149,7 @@ class ActorCritic:
 	def _update_actor_target(self):
 		actor_model_weights  = self.actor_model.get_weights()
 		actor_target_weights = self.target_actor_model.get_weights()
-		
+
 		for i in range(len(actor_target_weights)):
 			actor_target_weights[i] = actor_model_weights[i]
 		self.target_actor_model.set_weights(actor_target_weights)
@@ -171,10 +157,10 @@ class ActorCritic:
 	def _update_critic_target(self):
 		critic_model_weights  = self.critic_model.get_weights()
 		critic_target_weights = self.critic_target_model.get_weights()
-		
+
 		for i in range(len(critic_target_weights)):
 			critic_target_weights[i] = critic_model_weights[i]
-		self.critic_target_model.set_weights(critic_target_weights)		
+		self.critic_target_model.set_weights(critic_target_weights)
 
 	def update_target(self):
 		self._update_actor_target()
@@ -187,21 +173,25 @@ class ActorCritic:
 	def act(self, cur_state, actions_taken):
 		self.epsilon *= self.epsilon_decay
 		if np.random.random() < self.epsilon:
+                        #Make a random distribution across the action space, to match the format of a prediction
+                        #Remove previously taken actions, so there will be no repeats
+                        #the highest remaining action will not have been taken before
                         action_choices = np.random.uniform(0, 1, self.env.action_space.n) - actions_taken
-#                        action = self.env.action_space.sample()
-#                        print("sample")
                 else:
                         prediction = self.actor_model.predict(cur_state)[0]
                         #normalize prediction so no element is >1, and remove all previously chosen elments
-                        action_choices = prediction/(prediction[np.argmax(prediction)]) - actions_taken
+                        action_choices = prediction/(abs(prediction[np.argmax(prediction)])+1) - actions_taken*2
 
-#                print(action_choices)
+                #Choose the highest predicted action (ones that have been taken before will be out of the running
                 action = np.argmax(action_choices)
-#                print(action)
 
+                #Construct the action vector
                 action_vec = np.zeros(self.env.action_space.n)
                 action_vec[action] = 1
+
+                #Update which actions have been taken
                 actions_taken[action] = 1
+
                 return action_vec, actions_taken
 
 def main():
@@ -211,58 +201,99 @@ def main():
 	env = env.unwrapped
 	actor_critic = ActorCritic(env, sess)
 
-	num_trials = 50
+	num_trials = 1000
 
 	cur_state = env.reset()
-#	action = env.action_space.sample()
-        ep = 0
+        episode = 0
         done = False
         totreward = 0
-        rewardsLog = []
 
-	while ep < num_trials:
+        #Log data
+        rewards = []
+        chisqs = []
+        zvals = []
+        steps = []
+        single_eps_chis = []
+        hkls = []
+
+	while episode < num_trials:
+            #Start an episode
 
             actions_taken = np.zeros(env.action_space.n)
 
             while done is False:
+                #take an action
 
+                #Choose action
 		cur_state = cur_state.reshape((1, env.observation_space.shape[0]))
 		action, actions_taken = actor_critic.act(cur_state, actions_taken)
-
 		action = action.reshape((1, env.action_space.n))
-#                print(action)
 
-		new_state, reward, done, _ = env.step(np.argmax(action))
+                #Take action
+		new_state, reward, done, info = env.step(np.argmax(action))
                 totreward += reward
-#                print(action, reward)
+
                 new_state = new_state.reshape((1, env.observation_space.shape[0]))
 
+                #train
                 actor_critic.remember(cur_state, action, reward, new_state, done)
                 actor_critic.train()
 
                 cur_state = new_state
 
-#	    file.close()
-            print(totreward)
-            totreward = 0
-#	    env.episodeNum += 1
-	    env.epStep()
-            env.reset()
-#            ep +=1
-            done = False
+                single_eps_chis.append(info.get("chi"))
+                hkls.append(info.get("hkl"))
 
-
-#            print(totreward)
-            rewardsLog.append(totreward)
-            totreward = 0
+            #reset
             cur_state = env.reset()
-            ep +=1
+            episode +=1
             done = False
 
-        plt.plot(rewardsLog)
-        plt.xlabel("Episode")
-        plt.ylabel("Total Reward")
-        plt.savefig("/mnt/storage/ac-rewards-no-repeat.png")
+            if ((episode % 10) == 0):
+                rewards.append(totreward)
+                chisqs.append(info.get("chi"))
+                zvals.append(info.get("z"))
+                steps.append(episode)
+
+            totreward = 0
+
+            if((episode % 50) == 0):
+                plt.plot(single_eps_chis)
+                plt.xlabel("Measurements Taken")
+                plt.ylabel("Chi Suqred Value")
+                plt.title("Z: " + str(info.get("z")))
+                plt.savefig('/mnt/storage/ac-025-chi-in-eps-' + str(episode) + '.png')
+                plt.close()
+
+            single_eps_chis = []
+
+            if((episode % 50) == 0):
+                file = open("/mnt/storage/ac-025-hklLog-invchi2" + str(episode) + ".txt", "w")
+                file.write("episode: " + str(episode))
+                file.write(str(hkls))
+                file.close()
+
+            hkls = []
+
+            if((episode % 100) == 0):
+
+                plt.scatter(steps, rewards)
+                plt.xlabel("Episodes")
+                plt.ylabel("Reward")
+                plt.savefig('/mnt/storage/ac-reward-invchi25.png')
+                plt.close()
+
+                plt.scatter(steps, chisqs)
+                plt.xlabel("Episodes")
+                plt.ylabel("Final Chi Squared Value")
+                plt.savefig('/mnt/storage/ac-chi-invchi25.png')
+                plt.close()
+
+                plt.scatter(steps, zvals)
+                plt.xlabel("Episodes")
+                plt.ylabel("Z Value")
+                plt.savefig('/mnt/storage/ac-z-invchi25.png')
+                plt.close()
 
 if __name__ == "__main__":
 	main()

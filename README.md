@@ -2,11 +2,13 @@
 
 Algorithm was adapted from this tutorial: https://towardsdatascience.com/reinforcement-learning-w-keras-openai-actor-critic-models-f084612cfd69
 
-##Setting up Dependancies
+## Setting up Dependancies
 
 These instructions are for a docker container containing all of the dependancies. If you are using ubuntu you could follow these instructions outside of a container.
 
-Set up a container with openai gym, keras, and tensorflow. You need nvidia-docker installed to utilize the gpu from a docker container.
+### Set up a container with openai gym, keras, and tensorflow
+
+You need nvidia-docker installed to utilize the gpu from a docker container.
 
 Start a container
 
@@ -18,6 +20,8 @@ Within the container, set up gym and keras
     $ pip install gym
     $ pip install keras
 
+### Set up the code
+
 Clone crystal-ac-ml and pycrysfml
 
     $ apt install git
@@ -25,7 +29,8 @@ Clone crystal-ac-ml and pycrysfml
     $ git clone https://github.com/scattering/pycrysfml.git
 
 Follow instructions in pycrysfml/doc/Ubuntu_deps.txt to set up pycrysfml
-####todo add prnio.clf optimized
+#### todo add prnio.clf optimized
+#### todo fix sxtal model
 
 Edit the filepath in the top of hkl.py to match your directory structure (i.e., enter the path to the prnio.int file in pycrysfml).
 
