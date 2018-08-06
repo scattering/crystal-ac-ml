@@ -29,7 +29,9 @@ Clone crystal-ac-ml and pycrysfml
     $ git clone https://github.com/scattering/pycrysfml.git
 
 Follow instructions in pycrysfml/doc/Ubuntu_deps.txt to set up pycrysfml
+
 Replace pycrysfml/hklgen/sxtal_model.py with the sxtal_model.py file in this repository. This updates the model class to accept empty lists for the observed data, so you can create a model without giving it all of the initial data. 
+
 Replace the prnio.cfl file in pycrysfml/hklgen/examples/sxtal/prnio.cfl with the prnio_optimized.cfl file. This file contains optimized atomic position values from fitting the data with FullProf. It will allow you to get better fits on the praseodymium nickolate crsytal model when only fitting a single parameter.
 
 Edit the filepath in the top of hkl.py to match your directory structure (i.e., enter the path to the prnio.int file in pycrysfml).

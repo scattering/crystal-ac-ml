@@ -22,7 +22,7 @@ Run a dream fit
  * Go into Putty settings: connection/SSH/X11 and enable X11 forwarding
  * Run a docker container with this tag:
 
-    -v /storage/yourDir/:/path/in/container/
+        -v /storage/yourDir/:/path/in/container/
 
    This mounts the storage directory to your docker container
  * Write images to a png in /path/in/container/
