@@ -22,11 +22,10 @@ Within the container, set up gym and keras
 
 ### Set up the code
 
-Clone crystal-ac-ml and pycrysfml
+Clone crystal-ac-ml and pycrysfml. For ease of transition, either put them in the home directory or change all filepaths in hkl.py.
 
     $ apt install git
     $ git clone https://github.com/scattering/crystal-ac-ml.git
-    $ git clone https://github.com/scattering/pycrysfml.git
 
 Follow instructions in pycrysfml/doc/Ubuntu_deps.txt to set up pycrysfml
 
@@ -39,3 +38,30 @@ Edit the filepath in the top of hkl.py to match your directory structure (i.e., 
 Copy __init__.py and hkl.py into /usr/local/lib/python2.7/dist-packages/gym/envs/ to register our environment (hkl.py) with openai gym.
 
 Now you are all set up to run actor_critic.py from anywhere in your filesystem.
+
+### Run with SLURM
+
+If you are going to run the code remotely, using slurm rather than directly from inside the container, you need to first save this container as an image.
+
+Exit the container and use 'docker ps -a' to get the container id. Then commit it.
+
+    $ docker commit cont-id image-name
+
+Now that the image is commited, it can be run from slurm
+
+cd into your storage folder. Then run:
+
+    /storage/you$  srun --mem=0 --nodelist=ncnrgpu1 bash -c '/storage/etc/sudocker run runtime=nvidia -d -v /storage/you/:/path/in/container/ img-name python /path/to/actor_critic.py'
+
+The parts of the srun command are:
+
+    --nodelist: the node to run on
+    bash -c: run a bash command
+    --runtime=nvida: use nvidia docker, remove this to run with regular docker
+
+
+### Additional Notes for SLURM
+
+To move containers around nodes, save the container to a tar file using 
+
+    $ docker save container-id
