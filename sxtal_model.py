@@ -1,8 +1,13 @@
 from pycrysfml import *
 from fswig_hklgen import *
 from hkl_model import TriclinicCell, MonoclinicCell, OrthorhombicCell, TetragonalCell, HexagonalCell, CubicCell, makeCell, AtomListModel, AtomModel
-from string import rstrip, ljust, rjust, center
+#from string import rstrip, ljust, rjust, center
 import sys
+
+def rstrip(s, *args, **kw): return s.rstrip(*args, **kw)
+def ljust(s, *args, **kw): return s.ljust(*args, **kw)
+def rjust(s, *args, **kw): return s.rjust(*args, **kw)
+def center(s, *args, **kw): return s.center(*args, **kw)
 try:
     from bumps.names import Parameter, FitProblem
 except(ImportError):
@@ -50,7 +55,8 @@ def readIntFile(filename, skiplines=3, exclusions=None, kind="dat", cell=None):
         funcs.alloc_refllist_array(refList)
         for i in range(len(HKLs[:,0])):
             reflection = Reflection()
-            hkl = IntVector(HKLs[i,:])
+
+            hkl = IntVector(HKLs[i,:].tolist())
             reflection.set_reflection_h(hkl)
             reflection.set_reflection_s(calcS(cell, hkl))
             reflection.set_reflection_mult(1)
@@ -173,7 +179,7 @@ def diffPatternXtal(infoFile=None, backgroundFile=None, wavelength=1.5403,
             if (symmetry == None): symmetry = infofile[3]
         if (basisSymmetry == None): basisSymmetry = symmetry
         magRefList = satelliteGen(cell, symmetry, np.sin(179.5/2)/wavelength, hkls=refList)
-        print "length of reflection list " + str(len(magRefList))
+        print("length of reflection list " + str(len(magRefList)))
         sfs2, svalues = calcXtalIntensity(magRefList, magAtomList, basisSymmetry,
                                       wavelength, cell, True, extinctions=extinctions, scale=scale)
         magpeaks = makeXtalPeaks(sfs2, svalues, magRefList)
@@ -245,37 +251,37 @@ def plotXtalPattern(peaks, sList, obsIntensity, background=None,
 # printInfo: prints out information about the provided space group and atoms,
 #   as well as the generated reflections
 def printXtalInfo(cell, spaceGroup, atomLists, refLists, wavelength, symmetry=None):
-    print "Wavelength:", wavelength
+    print("Wavelength:", wavelength)
     if (isinstance(refLists, ReflectionList)):
         atomLists = (atomLists,)
         refLists = (refLists,)
     
     divider = "-" * 40
-    print "Cell information (%s cell)" % rstrip(getSpaceGroup_crystalsys(spaceGroup))
-    print divider
-    print " a = %.3f   alpha = %.3f" % (cell.length()[0], cell.angle()[0])
-    print " b = %.3f   beta  = %.3f" % (cell.length()[1], cell.angle()[1])
-    print " c = %.3f   gamma = %.3f" % (cell.length()[2], cell.angle()[2])
-    print divider
-    print
-    print "Space group information"
-    print divider
-    print "               Number: ", spaceGroup.get_space_group_numspg()
-    print "           H-M Symbol: ", getSpaceGroup_spg_symb(spaceGroup)
-    print "          Hall Symbol: ", getSpaceGroup_hall(spaceGroup)
-    print "       Crystal System: ", getSpaceGroup_crystalsys(spaceGroup)
-    print "           Laue Class: ", getSpaceGroup_laue(spaceGroup)
-    print "          Point Group: ", getSpaceGroup_pg(spaceGroup)
-    print " General Multiplicity: ", spaceGroup.get_space_group_multip()
-    print divider
-    print
-    print "Atom information (%d atoms)" % len(atomLists[0])
-    print divider
+    print("Cell information (%s cell)" % rstrip(getSpaceGroup_crystalsys(spaceGroup)))
+    print(divider)
+    print(" a = %.3f   alpha = %.3f" % (cell.length()[0], cell.angle()[0]))
+    print(" b = %.3f   beta  = %.3f" % (cell.length()[1], cell.angle()[1]))
+    print(" c = %.3f   gamma = %.3f" % (cell.length()[2], cell.angle()[2]))
+    print(divider)
+    print()
+    print("Space group information")
+    print(divider)
+    print("               Number: ", spaceGroup.get_space_group_numspg())
+    print("           H-M Symbol: ", getSpaceGroup_spg_symb(spaceGroup))
+    print("          Hall Symbol: ", getSpaceGroup_hall(spaceGroup))
+    print("       Crystal System: ", getSpaceGroup_crystalsys(spaceGroup))
+    print("           Laue Class: ", getSpaceGroup_laue(spaceGroup))
+    print("          Point Group: ", getSpaceGroup_pg(spaceGroup))
+    print(" General Multiplicity: ", spaceGroup.get_space_group_multip())
+    print(divider)
+    print()
+    print("Atom information (%d atoms)" % len(atomLists[0]))
+    print(divider)
     atomList = atomLists[0]
     magnetic = atomList.magnetic
     label = [rstrip(getAtom_lab(atom)) for atom in atomList]
     x, y, z = tuple(["%.3f" % atom.coords()[i] for atom in atomList]
-                    for i in xrange(3))
+                    for i in range(3))
     multip = [str(atom.get_atom_mult()) for atom in atomList]
     occupancy = ["%.3f" % (atom.get_atom_occ()*spaceGroup.get_space_group_multip()/atom.get_atom_mult())
                  for atom in atomList]
@@ -287,25 +293,25 @@ def printXtalInfo(cell, spaceGroup, atomLists, refLists, wavelength, symmetry=No
                          ('mult', max(len(max(multip, key=len)), 4)),
                          ('occ', max(len(max(occupancy, key=len)), 3)),
                          ])
-    print "%s   %s %s %s   %s  %s" % tuple([center(key, v) for key, v 
-                                             in width.iteritems()])
-    for i in xrange(len(atomList)):
-        print "%s  (%s %s %s)  %s  %s" % (center(label[i], width["label"]),
+    print("%s   %s %s %s   %s  %s" % tuple([center(key, v) for key, v 
+                                             in width.items()]))
+    for i in range(len(atomList)):
+        print("%s  (%s %s %s)  %s  %s" % (center(label[i], width["label"]),
                                           rjust(x[i], width["x"]),
                                           rjust(y[i], width["y"]),
                                           rjust(z[i], width["z"]),
                                           center(multip[i], width["mult"]),
-                                          rjust(occupancy[i], width["occ"]))
-    print divider
-    print
-    print "Reflection information (%d reflections)" % \
-          sum([len(refList) for refList in refLists])
-    print divider
+                                          rjust(occupancy[i], width["occ"])))
+    print(divider)
+    print()
+    print("Reflection information (%d reflections)" % \
+          sum([len(refList) for refList in refLists]))
+    print(divider)
     for atomList, refList in zip(atomLists, refLists):
         magnetic = refList.magnetic
         if magnetic: symmObject = symmetry
         else: symmObject = spaceGroup
-        h, k, l = tuple([str(ref.hkl[i]) for ref in refList] for i in xrange(3))
+        h, k, l = tuple([str(ref.hkl[i]) for ref in refList] for i in range(3))
         multip = [str(ref.multip) for ref in refList]
         tt = ["%.3f" % twoTheta(ref.s, wavelength) for ref in refList]
         intensity = ["%.3f" % I for I in calcXtalIntensity(refList, atomList, symmObject, wavelength, cell, magnetic)[0]]
@@ -321,18 +327,18 @@ def printXtalInfo(cell, spaceGroup, atomLists, refLists, wavelength, symmetry=No
                              ('2*theta', max(len(max(tt, key=len)), 7)),
                              ('intensity', max(len(max(intensity, key=len)), 9))
                             ])
-        print "  %s %s %s   %s  %s  %s" % tuple([center(key, v) for key, v 
-                                                 in width.iteritems()])
-        for i in xrange(len(refList)):
-            print " (%s %s %s)  %s  %s  %s" % (rjust(h[i], width["h"]),
+        print("  %s %s %s   %s  %s  %s" % tuple([center(key, v) for key, v 
+                                                 in width.items()]))
+        for i in range(len(refList)):
+            print(" (%s %s %s)  %s  %s  %s" % (rjust(h[i], width["h"]),
                                                rjust(k[i], width["k"]),
                                                rjust(l[i], width["l"]),
                                                center(multip[i], width["mult"]),
                                                rjust(tt[i], width["2*theta"]),
-                                               rjust(intensity[i], width["intensity"]))
-        print
-    print divider
-    print
+                                               rjust(intensity[i], width["intensity"])))
+        print()
+    print(divider)
+    print()
     
 # bumps model
 # Model: represents an object that can be used with bumps for optimization
@@ -467,7 +473,7 @@ class Model(object):
             #   Peaks         
             hkls = [reflection.hkl for reflection in self.magReflections]
             sList = calcS(self.cell.cell, hkls)
-            for i in xrange(len(self.magReflections)):
+            for i in range(len(self.magReflections)):
                 self.magReflections[i].set_magh_s(sList[i])
             sfs2, svalues = calcXtalIntensity(self.magRefList, self.atomListModel.magAtomList, self.symmetry, self.wavelength, magnetic=True, cell=self.cell.cell, extinctions=[ext.value for ext in self.extinctions], scale=self.scale.value)
             self.magIntensities = sfs2
@@ -479,7 +485,7 @@ class Model(object):
         if self.reflections != None:
             hkls = [reflection.hkl for reflection in self.reflections]
             sList = calcS(self.cell.cell, hkls)
-            for i in xrange(len(self.reflections)):
+            for i in range(len(self.reflections)):
                 self.reflections[i].set_reflection_s(sList[i])
             sfs2, svalues = calcXtalIntensity(self.refList, self.atomListModel.atomList, self.spaceGroup, self.wavelength, extinctions=[ext.value for ext in self.extinctions], scale=self.scale.value)
             self.intensities = sfs2

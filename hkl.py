@@ -1,4 +1,4 @@
-import os,sys;sys.path.append(os.path.abspath("/home/pycrysfml/hklgen/"))
+import os,sys;sys.path.append(os.path.abspath("/home/jpr6/pycrysfml/hklgen/"))
 from os import path
 import os
 import gym
@@ -30,7 +30,7 @@ class HklEnv(gym.Env):
     def __init__(self):
 
 
-        DATAPATH = os.path.abspath("/home/pycrysfml/hklgen/examples/sxtal")
+        DATAPATH = os.path.abspath("/home/jpr6/pycrysfml/hklgen/examples/sxtal")
         observedFile = os.path.join(DATAPATH,r"prnio.int")
         infoFile = os.path.join(DATAPATH,r"prnio.cfl")
 
@@ -50,15 +50,15 @@ class HklEnv(gym.Env):
         self.observation_space = spaces.MultiBinary(len(self.refList))
         self.action_space = spaces.Discrete(len(self.refList))
 
-	self.episodeNum = 0
+        self.episodeNum = 0
         self.reset()
 
     def epStep(self):
-	self.episodeNum += 1
+        self.episodeNum += 1
 
     def step(self, actions):
 
-	chisq = None
+        chisq = None
 
         self.steps += 1
 
