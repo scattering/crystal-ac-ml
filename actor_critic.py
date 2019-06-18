@@ -130,7 +130,7 @@ class ActorCritic:
                 future_reward = self.target_critic_model.predict(
                     [new_state, target_action])[0][0]
                 reward += self.gamma * future_reward
-            self.critic_model.fit([cur_state, action], np.array([reward]), verbose=0)
+            self.critic_model.fit([cur_state, np.array(action)], np.array([reward]), verbose=0)
 
     def train(self):
         batch_size = 32
@@ -182,15 +182,15 @@ class ActorCritic:
                         #normalize prediction so no element is >1, and remove all previously chosen elments
             action_choices = prediction/(abs(prediction[np.argmax(prediction)])+1) - actions_taken*2
 
-                #Choose the highest predicted action (ones that have been taken before will be out of the running
-            action = np.argmax(action_choices)
+        #Choose the highest predicted action (ones that have been taken before will be out of the running
+        action = np.argmax(action_choices)
 
-                #Construct the action vector
-            action_vec = np.zeros(self.env.action_space.n)
-            action_vec[action] = 1
+        #Construct the action vector
+        action_vec = np.zeros(self.env.action_space.n)
+        action_vec[action] = 1
 
-                #Update which actions have been taken
-            actions_taken[action] = 1
+        #Update which actions have been taken
+        actions_taken[action] = 1
 
         return action_vec, actions_taken
 
@@ -230,6 +230,7 @@ def main():
                 action = action.reshape((1, env.action_space.n))
 
                 #Take action
+                action=action.tolist()
                 new_state, reward, done, info = env.step(np.argmax(action))
                 totreward += reward
 

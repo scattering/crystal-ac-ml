@@ -63,7 +63,8 @@ class HklEnv(gym.Env):
         self.steps += 1
 
         #No repeats
-        self.visited.append(self.refList[actions])
+        #print('actions', type(actions), actions)
+        self.visited.append(self.refList[int(actions)])
         self.remainingActions.remove(actions)
 
         #Find the data for this hkl value and add it to the model
@@ -92,13 +93,12 @@ class HklEnv(gym.Env):
         self.totReward += reward
 
         if (self.prevChisq != None and len(self.visited) > 50 and chisq < 5):
-            return self.state, 1, True, {"chi": self.prevChisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions].hkl}
+            return self.state, 1, True, {"chi": self.prevChisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions.tolist()].hkl}
         if (len(self.remainingActions) == 0 or self.steps > 300):
             terminal = True
         else:
             terminal = False
-
-        return self.state, reward, terminal, {"chi": self.prevChisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions].hkl} #, chisq, self.model.atomListModel.atomModels[0].z.value, self.refList[actions]
+        return self.state, reward, terminal, {"chi": self.prevChisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions.tolist()].hkl} #, chisq, self.model.atomListModel.atomModels[0].z.value, self.refList[actions]
 
     def reset(self):
 
@@ -107,7 +107,7 @@ class HklEnv(gym.Env):
 
         #Define a model
         self.model = S.Model([], [], self.backg, self.wavelength, self.spaceGroup, cell,
-                    [self.atomList], self.exclusions,
+                    self.atomList, self.exclusions,
                     scale=0.06298, error=[],  extinction=[0.0001054])
 
         #Set a range on the x value of the first atom in the model
