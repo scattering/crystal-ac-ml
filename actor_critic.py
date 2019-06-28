@@ -5,6 +5,7 @@ solving pendulum using actor-critic model
 """
 
 import gym
+import sys,os
 import numpy as np 
 from keras.models import Sequential, Model
 from keras.layers import Dense, Dropout, Input
@@ -194,13 +195,17 @@ class ActorCritic:
 
         return action_vec, actions_taken
 
-def main():
+def main(args):
     sess = tf.Session()
     K.set_session(sess)
-    env = gym.make("hkl-v0")
+    reward_scale=float(args[0])
+    mydir=args[1] #/wrk/jpr6
+    env = gym.make("hkl-v0", reward_scale=reward_scale)
     env = env.unwrapped
     actor_critic = ActorCritic(env, sess)
 
+    
+    
     num_trials = 1000
 
     cur_state = env.reset()
@@ -258,44 +263,44 @@ def main():
 
             totreward = 0
 
-            if((episode % 50) == 0):
+            if((episode % 10) == 0):
                 plt.plot(single_eps_chis)
                 plt.xlabel("Measurements Taken")
-                plt.ylabel("Chi Suqred Value")
+                plt.ylabel("Chi Squared Value")
                 plt.title("Z: " + str(info.get("z")))
-                plt.savefig('/mnt/storage/ac-025-chi-in-eps-' + str(episode) + '.png')
+                plt.savefig(os.path.join(mydir,'ac-025-chi-in-eps-' + str(episode) + '.png'))
                 plt.close()
 
             single_eps_chis = []
 
-            if((episode % 50) == 0):
-                file = open("/mnt/storage/ac-025-hklLog-invchi2" + str(episode) + ".txt", "w")
+            if((episode % 10) == 0):
+                file = open(os.path.join(mydir, "ac-025-hklLog-invchi2" + str(episode) + ".txt"), "w")
                 file.write("episode: " + str(episode))
                 file.write(str(hkls))
                 file.close()
 
             hkls = []
 
-            if((episode % 100) == 0):
+            if((episode % 10) == 0):
 
                 plt.scatter(steps, rewards)
                 plt.xlabel("Episodes")
                 plt.ylabel("Reward")
-                plt.savefig('/mnt/storage/ac-reward-invchi25.png')
+                plt.savefig(os.path.join(mydir,'ac-reward-invchi25.png'))
                 plt.close()
 
                 plt.scatter(steps, chisqs)
                 plt.xlabel("Episodes")
                 plt.ylabel("Final Chi Squared Value")
-                plt.savefig('/mnt/storage/ac-chi-invchi25.png')
+                plt.savefig(os.path.join(mydir,'ac-chi-invchi25.png'))
                 plt.close()
 
                 plt.scatter(steps, zvals)
                 plt.xlabel("Episodes")
                 plt.ylabel("Z Value")
-                plt.savefig('/mnt/storage/ac-z-invchi25.png')
+                plt.savefig(os.path.join(mydir,'ac-z-invchi25.png'))
                 plt.close()
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])
 

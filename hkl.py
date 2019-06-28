@@ -18,17 +18,17 @@ import fswig_hklgen as H
 import hkl_model as Mod
 import sxtal_model as S
 
-import  bumps.names  as bumps
-import bumps.fitters as fitter
-import bumps.lsqerror as lsqerr
+import bumps.names as bumps
+import bumps.fitters as fitters
+import bumps.lsqerror as lsqerror
 from bumps.formatnum import format_uncertainty_pm
 
 #from tensorforce.environments import Environment
 
 class HklEnv(gym.Env):
 
-    def __init__(self):
-
+    def __init__(self, reward_scale=1e-3):
+        self.reward_scale=reward_scale
 
         DATAPATH = os.path.abspath("/home/jpr6/pycrysfml/hklgen/examples/sxtal")
         observedFile = os.path.join(DATAPATH,r"prnio.int")
@@ -59,11 +59,11 @@ class HklEnv(gym.Env):
     def step(self, actions):
 
         chisq = None
+        dz =None
 
         self.steps += 1
 
         #No repeats
-        #print('actions', type(actions), actions)
         self.visited.append(self.refList[int(actions)])
         self.remainingActions.remove(actions)
 
@@ -78,27 +78,37 @@ class HklEnv(gym.Env):
         self.model._set_observations(self.observed)
         self.model.update()
 
-        reward = -0.1
+        reward = -self.reward_scale
+        #print('reward',reward)
 
         #Need more data than parameters, have to wait to the second step to fit
         if len(self.visited) > 1:
 
-            x, dx, chisq = self.fit(self.model)
+            x, dx, chisq, params = self.fit(self.model)
+            
+            #'name': 'Pr z'
+            dz=params[0].dx
+            if self.prevDx != None and dz < self.prevDx:
+                reward=1/dz
+                #print('reward',dz)
+                
+            self.prevDx=dz
 
-            if (self.prevChisq != None and chisq < self.prevChisq):
-                reward = 1/(chisq*10)
+            #if (self.prevChisq != None and chisq < self.prevChisq):
+            #    reward = 1/(chisq*10)
 
-            self.prevChisq = chisq
+            #self.prevChisq = chisq
 
         self.totReward += reward
 
         if (self.prevChisq != None and len(self.visited) > 50 and chisq < 5):
-            return self.state, 1, True, {"chi": self.prevChisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions.tolist()].hkl}
+            return self.state, 1, True, {"chi": self.prevChisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions].hkl}
         if (len(self.remainingActions) == 0 or self.steps > 300):
             terminal = True
         else:
             terminal = False
-        return self.state, reward, terminal, {"chi": self.prevChisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions.tolist()].hkl} #, chisq, self.model.atomListModel.atomModels[0].z.value, self.refList[actions]
+
+        return self.state, reward, terminal, {"chi": chisq, "z": self.model.atomListModel.atomModels[0].z.value, "hkl": self.refList[actions.tolist()].hkl} #, chisq, self.model.atomListModel.atomModels[0].z.value, self.refList[actions]
 
     def reset(self):
 
@@ -107,7 +117,7 @@ class HklEnv(gym.Env):
 
         #Define a model
         self.model = S.Model([], [], self.backg, self.wavelength, self.spaceGroup, cell,
-                    self.atomList, self.exclusions,
+                             self.atomList, self.exclusions,
                     scale=0.06298, error=[],  extinction=[0.0001054])
 
         #Set a range on the x value of the first atom in the model
@@ -122,6 +132,7 @@ class HklEnv(gym.Env):
 
         self.totReward = 0
         self.prevChisq = None
+        self.prevDx= None
         self.steps = 0
 
         self.state = np.zeros(len(self.refList))
@@ -134,9 +145,22 @@ class HklEnv(gym.Env):
         #Create a problem from the model with bumps,
         #then fit and solve it
         problem = bumps.FitProblem(model)
-        fitted = fitter.LevenbergMarquardtFit(problem)
-        x, dx = fitted.solve()
-        return x, dx, problem.chisq()
+        result = fitters.fit(problem, method='lm')
+        for p, v in zip(problem._parameters, result.dx):
+            p.dx = v
+        return result.x, result.dx, problem.chisq(), problem._parameters
+        
+        """   # Dead code
+        fitted = fitters.LevenbergMarquardtFit(problem)
+        x, fx = fitted.solve()
+        cov = fitted.cov()
+        dx = lsqerror.stderr(cov)
+        #problem.setp(x)  <=== this is done already in LM (and all other fitters)
+        #print('x,dx',x,dx, problem._parameters[0].__dict__)
+        for p, v in zip(problem._parameters, dx):
+            p.dx = v
+        return x, dx, problem.chisq(),problem._parameters
+        """
 
     @property
     def states(self):
